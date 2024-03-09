@@ -15,68 +15,70 @@ struct Time{
 
 class DateTime{
 private:
-    int seconds = 0;
-    int minutes = 0;
-    int hours = 0;
-    int day = 0;
-    int month = 0;
-    int year = 0;
+    Date d;
+    Time t;
 
 public:
     DateTime();
 
-    DateTime(int, int, int, int, int, int);
+    DateTime(int seconds, int minutes, int hours, int day, int month, int year);
 
     DateTime(DateTime&);
 
-    DateTime(DateTime&&) noexcept ;
+    DateTime(DateTime&&) noexcept;
 
     inline int getSeconds() const{
-        return this->seconds;
+        return this->t.seconds;
     }
 
-    inline void setSeconds(int seconds){
-        this->seconds = seconds;
+    inline void setSeconds(long long seconds){
+        this->t.seconds = 0;
+        this->addSeconds(seconds);
     }
 
     inline int getMinutes() const{
-        return this->minutes;
+        return this->t.minutes;
     }
 
-    inline void setMinutes(int minutes){
-        this->minutes = minutes;
+    inline void setMinutes(long long minutes){
+        this->t.minutes = 0;
+        this->addMinutes(minutes);
     }
 
     inline int getHours() const{
-        return this->hours;
+        return this->t.hours;
     }
 
-    inline void setHours(int hours){
-        this->hours = hours;
+    inline void setHours(long long hours){
+        this->t.hours = 0;
+        this->addHours(hours);
     }
 
     inline int getDay() const{
-        return this->day;
+        return this->d.day;
     }
 
     inline void setDay(int day){
-        this->day = day;
+        this->d.day = 0;
+        this->addDays(day);
     }
 
     inline int getMonth() const{
-        return this->month;
+        return this->d.month;
     }
 
     inline void setMonth(int month){
-        this->month = month;
+        this->d.month = 0;
+        this->addMonths(month);
     }
 
     inline int getYear() const{
-        return this->year;
+        return this->d.year;
     }
 
     inline void setYear(int year){
-        this->year = year;
+        this->d.year = 0;
+        this->addYears(year);
     }
 
     void printByTemplate(int) const;
@@ -85,21 +87,21 @@ public:
 
     static bool verifyTime(int, int, int);
 
-    static std::string currentDateTime();
+    static DateTime currentDateTime();
 
-    std::string datetimeToString(int) const;
+    char *dateTimeToString(int) const;
 
     Date date();
 
     Time time();
 
-    static DateTime getDateTimeFromString(const char *, int);
+    static DateTime getDateTimeFromString(char *, int);
 
-    void addSeconds(int);
+    void addSeconds(long long);
 
-    void addMinutes(int);
+    void addMinutes(long long);
 
-    void addHours(int);
+    void addHours(long long);
 
     void addDays(int);
 
@@ -107,9 +109,9 @@ public:
 
     void addYears(int);
 
-    int daysTo();
+    static long long daysTo(DateTime&, DateTime&);
 
-    int secondsTo();
+    static long long secondsTo(DateTime&, DateTime&) ;
 };
 
 #endif //LAB_2_DATETIME_H

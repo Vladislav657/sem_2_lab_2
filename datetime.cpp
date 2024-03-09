@@ -1,193 +1,178 @@
 #include <iostream>
 #include <ctime>
-#include <regex>
 #include "datetime.h"
 
 using namespace std;
+int months[12] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
 
-DateTime::DateTime()= default;
+DateTime::DateTime(): d({0, 0, 0}), t({0, 0, 0}){}
 
-DateTime::DateTime(int seconds, int minutes, int hours, int day, int month, int year) {
-    this->seconds = seconds;
-    this->minutes = minutes;
-    this->hours = hours;
-    this->day = day;
-    this->month = month;
-    this->year = year;
+DateTime::DateTime(int seconds, int minutes, int hours, int day, int month, int year):
+        d({day, month, year}), t({seconds, minutes, hours}){
+    if (verifyTime(seconds, minutes, hours) && verifyDate(day, month, year)) {
+        this->t = {seconds, minutes, hours};
+        this->d = {day, month, year};
+    } else {
+        this->t = {0, 0, 0};
+        this->d = {0, 0, 0};
+    }
 }
 
-DateTime::DateTime(DateTime &dt) {
-    this->seconds = dt.seconds;
-    this->minutes = dt.minutes;
-    this->hours = dt.hours;
-    this->day = dt.day;
-    this->month = dt.month;
-    this->year = dt.year;
+DateTime::DateTime(DateTime &dt): d(dt.d), t(dt.t){
+    this->t = dt.t;
+    this->d = dt.d;
 }
 
-DateTime::DateTime(DateTime &&dt) noexcept {
-    this->seconds = dt.seconds;
-    this->minutes = dt.minutes;
-    this->hours = dt.hours;
-    this->day = dt.day;
-    this->month = dt.month;
-    this->year = dt.year;
+DateTime::DateTime(DateTime &&dt) noexcept: d(dt.d), t(dt.t){
+    this->t = dt.t;
+    this->d = dt.d;
 }
 
 void DateTime::printByTemplate(int format) const {
     // format - 1: 'hh:mm:ss dd/mm/yyyy' 2: 'hh:mm:ss dd.mm.yyyy' 3: 'hh.mm.ss dd/mm/yyyy'
-    switch (format) {
-        case 1:
-            printf("%.2d:%.2d:%.2d %.2d/%.2d/%.4d\n", hours, minutes, seconds, day, month, year);
-            break;
-        case 2:
-            printf("%.2d:%.2d:%.2d %.2d.%.2d.%.4d\n", hours, minutes, seconds, day, month, year);
-            break;
-        case 3:
-            printf("%.2d.%.2d.%.2d %.2d/%.2d/%.4d\n", hours, minutes, seconds, day, month, year);
-            break;
-        default:
-            printf("Incorrect format\n");
-    }
+    printf("%s\n", this->dateTimeToString(format));
 }
 
 bool DateTime::verifyDate(int day, int month, int year) {
-    if (year < 0 || year / 10000 > 0 || day < 0) return false;
-    switch (month) {
-        case 1:
-        case 3:
-        case 5:
-        case 7:
-        case 8:
-        case 10:
-        case 12:
-            return day <= 31;
-        case 2:
-            return day <= 28;
-        case 4:
-        case 6:
-        case 9:
-        case 11:
-            return day <= 30;
-        default:
-            return false;
-    }
+    return (year >= 0 && year / 10000 == 0 && month > 0 && month <= 12 && day > 0 && day <= months[month - 1]);
 }
 
 bool DateTime::verifyTime(int seconds, int minutes, int hours) {
     return (seconds >= 0 && seconds < 60 && minutes >= 0 && minutes < 60 && hours >= 0 && hours < 24);
 }
 
-//char *DateTime::currentDateTime() {
-//    return asctime(localtime((time(nullptr)))));
-//}
+DateTime DateTime::currentDateTime() {
+    time_t t = ::time(nullptr);
+    tm *t1 = localtime(&t);
+    DateTime dt = DateTime(t1->tm_sec, t1->tm_min, t1->tm_hour, t1->tm_mday,
+                           t1->tm_mon + 1, t1->tm_year + 1900);
+    return dt;
+}
 
-string DateTime::datetimeToString(int format) const {
+char *DateTime::dateTimeToString(int format) const {
     // format - 1: 'hh:mm:ss dd/mm/yyyy' 2: 'hh:mm:ss dd.mm.yyyy' 3: 'hh.mm.ss dd/mm/yyyy'
-    string hours_str = hours >= 10 ? to_string(hours) : "0" + to_string(hours);
-    string minutes_str = minutes >= 10 ? to_string(minutes) : "0" + to_string(minutes);
-    string seconds_str = seconds >= 10 ? to_string(seconds) : "0" + to_string(seconds);
-    string day_str = day >= 10 ? to_string(day) : "0" + to_string(day);
-    string month_str = month >= 10 ? to_string(month) : "0" + to_string(month);
-    string year_str;
-    if (year >= 1000) year_str = to_string(year);
-    else if (year >= 100) year_str = "0" + to_string(year);
-    else if (year >= 10) year_str = "00" + to_string(year);
-    else year_str = "000" + to_string(year);
-    string datetime;
+    char *datetime = new char [20];
     switch (format) {
         case 1:
-            datetime = hours_str + ":" + minutes_str + ":" + seconds_str + " " + day_str + "/" +
-                    month_str + "/" + year_str;
+            sprintf(datetime, "%.2d:%.2d:%.2d %.2d/%.2d/%.4d", t.hours, t.minutes, t.seconds,
+                    d.day, d.month, d.year);
             break;
         case 2:
-            datetime = hours_str + ":" + minutes_str + ":" + seconds_str + " " + day_str + "." +
-                       month_str + "." + year_str;
+            sprintf(datetime, "%.2d:%.2d:%.2d %.2d.%.2d.%.4d", t.hours, t.minutes, t.seconds,
+                    d.day, d.month, d.year);
             break;
         case 3:
-            datetime = hours_str + "." + minutes_str + "." + seconds_str + " " + day_str + "/" +
-                       month_str + "/" + year_str;
+            sprintf(datetime, "%.2d.%.2d.%.2d %.2d/%.2d/%.4d", t.hours, t.minutes, t.seconds,
+                    d.day, d.month, d.year);
             break;
         default:
-            return "Incorrect format";
+            return (char *) "Incorrect format";
     }
     return datetime;
 }
 
 Date DateTime::date() {
-    Date d = {day, month, year};
-    return d;
+    return this->d;
 }
 
 Time DateTime::time() {
-    Time t = {seconds, minutes, hours};
-    return t;
+    return this->t;
 }
 
-//DateTime::getDateTimeFromString(const char *datetime, int format) {
-//    // format - 1: 'hh:mm:ss dd/mm/yyyy' 2: 'hh:mm:ss dd.mm.yyyy' 3: 'hh.mm.ss dd/mm/yyyy'
-//
-//}
+DateTime DateTime::getDateTimeFromString(char *datetime, int format) {
+    // format - 1: 'hh:mm:ss dd/mm/yyyy' 2: 'hh:mm:ss dd.mm.yyyy' 3: 'hh.mm.ss dd/mm/yyyy'
+    DateTime dt;
+    switch (format) {
+        case 1:
+            sscanf(datetime, "%2d:%2d:%2d %2d/%2d/%4d", &dt.t.hours, &dt.t.minutes, &dt.t.seconds,
+                   &dt.d.day, &dt.d.month, &dt.d.year);
+            break;
+        case 2:
+            sscanf(datetime, "%2d:%2d:%2d %2d.%2d.%4d", &dt.t.hours, &dt.t.minutes, &dt.t.seconds,
+                   &dt.d.day, &dt.d.month, &dt.d.year);
+            break;
+        case 3:
+            sscanf(datetime, "%2d.%2d.%2d %2d/%2d/%4d", &dt.t.hours, &dt.t.minutes, &dt.t.seconds,
+                   &dt.d.day, &dt.d.month, &dt.d.year);
+            break;
+        default:
+            dt.t = {0, 0, 0};
+            dt.d = {0, 0, 0};
+    }
+    return dt;
+}
 
 void DateTime::addYears(int years) {
     if (years <= 0) return;
-    this->year += years;
-    if (this->year >= 10000) this->year %= 10000;
+    this->d.year += years;
+    if (this->d.year >= 10000) this->d.year %= 10000;
 }
 
-void DateTime::addMonths(int months) {
-    if (months <= 0) return;
-    this->month += months;
-    if (this->month > 12){
-        addYears(this->month / 12);
-        this->month %= 12;
+void DateTime::addMonths(int month) {
+    if (month <= 0) return;
+    this->d.month += month;
+    if (this->d.month > 12){
+        addYears(this->d.month / 12);
+        this->d.month %= 12;
     }
 }
 
 void DateTime::addDays(int days) {
     if (days <= 0) return;
-    this->day += days;
+    this->d.day += days;
     while (true){
-        if (month == 1 || month == 3 || month == 5 || month == 7 || month == 8 || month == 10 || month == 12){
-            if (this->day > 31){
-                addMonths(1);
-                this->day -= 31;
-            } else break;
-        } else if (month == 4 || month == 6 || month == 9 || month == 11){
-            if (this->day > 30){
-                addMonths(1);
-                this->day -= 30;
-            } else break;
-        } else if (month == 2 && this->day > 28){
+        if (this->d.day > months[this->d.month - 1]){
+            this->d.day -= months[this->d.month - 1];
             addMonths(1);
-            this->day -= 28;
-        } else break;
+        }
+        else break;
     }
 }
 
-void DateTime::addHours(int hours) {
+void DateTime::addHours(long long hours) {
     if (hours <= 0) return;
-    this->hours += hours;
-    if (this->hours >= 24){
-        addDays(this->hours / 24);
-        this->hours %= 24;
+    long long all_hours = this->t.hours + hours;
+    if (all_hours >= 24){
+        addDays((int)all_hours / 24);
+        all_hours %= 24;
     }
+    this->t.hours = (int) all_hours;
 }
 
-void DateTime::addMinutes(int minutes) {
+void DateTime::addMinutes(long long minutes) {
     if (minutes <= 0) return;
-    this->minutes += minutes;
-    if (this->minutes >= 60){
-        addHours(this->minutes / 60);
-        this->minutes %= 60;
+    long long all_minutes = this->t.minutes + minutes;
+    if (all_minutes >= 60){
+        addHours(all_minutes / 60);
+        all_minutes %= 60;
     }
+    this->t.minutes = (int) all_minutes;
 }
 
-void DateTime::addSeconds(int seconds) {
+void DateTime::addSeconds(long long seconds) {
     if (seconds <= 0) return;
-    this->seconds += seconds;
-    if (this->seconds >= 60){
-        addMinutes(this->seconds / 60);
-        this->seconds %= 60;
+    long long all_seconds = this->t.seconds + seconds;
+    if (all_seconds >= 60){
+        addMinutes(all_seconds / 60);
+        all_seconds %= 60;
     }
+    this->t.seconds = (int) all_seconds;
+}
+
+long long DateTime::daysTo(DateTime& dt1, DateTime& dt2) {
+    long long days1 = (long long) dt1.d.year * 365 + dt1.d.day;
+    for (int i = 0; i < dt1.d.month; ++i) days1 += months[i];
+    long long days2 = (long long) dt2.d.year * 365 + dt2.d.day;
+    for (int i = 0; i < dt2.d.month; ++i) days2 += months[i];
+    return days2 - days1;
+}
+
+long long DateTime::secondsTo(DateTime& dt1, DateTime& dt2) {
+    long long seconds1 = (long long) dt1.d.year * 365 * 24 * 60 * 60 + dt1.d.day * 24 * 60 * 60 +
+            dt1.t.hours * 60 * 60 + dt1.t.minutes * 60 + dt1.t.seconds;
+    for (int i = 0; i < dt1.d.month; ++i) seconds1 += months[i] * 24 * 60 * 60;
+    long long seconds2 = (long long) dt2.d.year * 365 * 24 * 60 * 60 + dt2.d.day * 24 * 60 * 60 +
+            dt2.t.hours * 60 * 60 + dt2.t.minutes * 60 + dt2.t.seconds;
+    for (int i = 0; i < dt2.d.month; ++i) seconds2 += months[i] * 24 * 60 * 60;
+    return seconds2 - seconds1;
 }
